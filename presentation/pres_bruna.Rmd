@@ -5,7 +5,7 @@ author: "Bruna Wundervald"
 date: "October 1st, 2018"
 output:
   xaringan::moon_reader:
-    css: [default, rutgers, middlebury-fonts]
+    css: [default, maynooth, tamu-fonts]
     lib_dir: libs
     nature:
       highlightStyle: github
