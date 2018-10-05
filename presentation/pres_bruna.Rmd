@@ -17,6 +17,11 @@ output:
 options(htmltools.dir.version = FALSE)
 ```
 
+```{r, eval=FALSE, echo=FALSE}
+# Make sure you use the xaringan version 
+# from my github, so it has the maynooth template ---
+devtools::install_github("brunaw/xaringan")
+```
 
 # Who am I
 
