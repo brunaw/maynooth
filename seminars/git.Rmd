@@ -1,0 +1,70 @@
+---
+title: "Git & GitHub"
+author: "Bruna Wundervald"
+date: "October, 2018"
+output:
+  xaringan::moon_reader:
+    css: [default, maynooth, maynooth-fonts]
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE)
+```
+
+## What is git and GitHub?
+
+
+---
+## Starting 
+
+- [Download](https://git-scm.com/downloads) and
+install git. 
+- Create a [GitHub](http://github.com) account.
+  - Note that students are ellegible to one year
+  of premium account for free!
+  
+- Connect you GitHub account to your local git using
+the SSH keys. **But what is a SSH key?**
+
+> An SSH key is an access credential in the SSH protocol. Its function is similar to that of user names and passwords, but the keys are primarily used for automated processes and for implementing single sign-on by system administrators and power users.
+
+---
+
+# Connecting local git and GitHub
+
+  1. Open the GitHub website and go to `Settings` -> `SSH and GPG keys` -> `New SSH key` 
+  2. Open  local terminal and run (with your email, of course): 
+  `ssh-keygen -t rsa -b 4096 -C "your_email@example.com"`
+  3. Press enter till the end of the process.
+  4. On terminal, run `eval "$(ssh-agent -s)"`
+  and `ssh-add ~/.ssh/id_rsa`. 
+
+
+Now you have generated the key. The next step is 
+copy and paste it in GitHub:
+
+  5. Open the file created in `~/.ssh` and copy it
+  to GitHub. 
+  
+More details here: https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/
+
+---
+
+# Basic git commands
+
+First, create a repository in GitHub, by clicking
+"Start a project". 
+
+  1. Clone it in the path you want with terminal
+  by running `git clone username/repositoryname`
+    - If you don't have the permission to clone
+    the repository, git you tell you!
+  
+
+
+  
+
