@@ -1,0 +1,307 @@
+---
+title: "Bayesian Linear Regression"
+author: "Bruna Wundervald"
+date: "`r Sys.Date()`"
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>", 
+  echo = TRUE, 
+  warning = FALSE, message = FALSE
+)
+```
+
+The regression problem involves determining the relationship
+between some responde variable $Y$ and a set of predictor
+variables $\mathbf{X} = (X_{1},...X_{p})$. Usually, we assume 
+that this relationship can be described by a deterministic function
+$f$ and some additive random error that follows a Normal distribution
+centered in 0 and with variance equals to $\sigma^{2}$:
+
+$$ Y = f(\mathbf{X}) + \epsilon $$
+The predictors $\mathbf{X}$ are assumed to be observed without
+error, so they're not considered **random**. We can check that 
+$$ f(\mathbf{X}) = E[Y |\mathbf{X} = \mathbf{x} ] $$
+meaning that the $f(\mathbf{X})$ describes the expectation over
+$Y$ when $\mathbf{X}$ is observed. The true regression function is 
+unknown and we have no way of determining it its analytic form 
+exactly, even if it exists. What we do is find approximations 
+which are the closest to the truth as possible. 
+
+## Basis functions
+
+Assuming that $f$ is made up of a linear combination of basis 
+functions and the correspondent coefficients, it can be 
+written as
+$$ f(\mathbf{x}) = \sum_{i = 1}^{k} \beta_{i} B_{i}(\mathbf{x}), 
+\quad \mathbf{x} \in \mathcal{X} $$
+
+where $\mathbf{\beta} = (\beta_{i},...\beta_{k})$ is the set of
+coefficients corresponding to basis functions 
+$\mathbf{B} = (B{i},...B{k})$. 
+
+## The Classic Linear Model
+
+```{r, fig.align='center', out.width='80%', out.height='80%'}
+library(tidyverse) # Always
+
+# Simulating  some data ----------------------------------
+set.seed(2018) # reprodutibility
+
+# Simulating the independent variable (arbitrarily
+# chosen as ~Normal and the error ~ N(0, sigma^2)
+sigma <- 1/rgamma(n = 1, shape = 0.5, rate = 1)
+x <- rnorm(n = 1000, mean = 3, sd = 1.5)
+e <- rnorm(n = 1000, mean = 0, sd = sqrt(sigma))
+
+# Priors of the parameters - intercept and slope
+# Justify the priors when simulating! 
+betas <- rnorm(n = 2, mean = 0, sd = sqrt(10))
+
+# The regression model
+y <- betas[1] + (betas[2] * x) + e
+
+da <- data.frame(y, x)
+
+# Plotting our data
+da %>% 
+  ggplot(aes(x, y)) +
+  geom_point(colour = 'skyblue', size = 2, alpha = 0.75) +
+  geom_smooth(method = 'lm', colour = 'grey', linetype = 'dotted') +
+  theme_bw() +
+  labs(x = 'Independent variable', y = 'Dependent variable')
+```
+
+```{r}
+# The classical regression model
+# With functions:
+lm(y ~ x) %>% summary()
+
+# Vanilla flavour:
+mm <- model.matrix( ~ x, data = da)
+k <-  ncol(mm)
+n <- nrow(mm)
+
+# Estimating betas
+v <- solve(t(mm) %*% mm)
+betas_hat <- c(v %*% t(mm) %*% y)
+betas_hat
+
+# y_hat
+y_hat <- mm %*% betas_hat
+
+# Residual sum of squares
+rss <- sum((y - y_hat)^2)
+
+# Mean sum of errors
+mse <- mean((y - y_hat)^2)
+
+# Rs - Multiple correlation coefficients
+(R <- sum((y_hat - mean(y))^2)/sum((y - mean(y))^2))
+(R_adj <- 1 - (1 - R)*((n-1)/(n-k)))
+
+# Estimating the variance of the parameters
+var_betas <- solve(t(mm) %*% mm) * mse
+var_betas
+
+# t-values
+t1 <- betas_hat[2]/sqrt(var_betas[2, 2]) 
+t2 <- betas_hat[1]/sqrt(var_betas[1, 1])
+
+# # p-values
+2 * pt(-abs(t1), df = n - k) # ?
+2 * pt(-abs(t2), df = n - k)
+```
+
+
+## The Bayesian Linear Model
+
+The Bayesian approach consists in:
+  1. assign prior distributions to all the unknown parameters;
+  2. write down the likelihood of the data given the parameters;
+  3. determine the posterior distributions of the parameters
+  given the data using Bayes' Theorem. 
+  
+  
+### 1. We find thta the conjugate choice of (joint) prior for 
+$\mathbf{\beta}$ and $\sigma^2$ is the normal inverse-gamma (NIG),
+denoted by $NIG(\mathbf{m}, \mathbf{V}, a, b)$, with 
+probability density function:
+
+$$ p(\mathbf{\beta}, \sigma^2) = p(\mathbf{\beta} | \sigma^2)
+p(\sigma^2) $$
+$$ p(\mathbf{\beta, \sigma^2}) = N(\mathbf{m}, \sigma^2 \mathbf{V})
+\times IG(a, b) $$
+
+So, the $\mathbf{\beta}$, given $\sigma^2$ are assumed to have 
+a Normal distribution, since its domain goes from $-\infty$ to 
+$+\infty$, and its mean and variance can be adjusted accordingly 
+to the expertise of the one who is building the model. The
+$\sigma^2$ is assumed to have the IG(a, b) distribution
+as its domain goes from $0$ to $+\infty$. 
+ 
+
+```{r, fig.align='center', out.width='80%', out.height='80%'}
+# Bayesian model ---------------------------------------------------
+
+# Priors were already assigned 
+# Bs ~ Normal
+# Sigma ~ IG
+
+# The same as before
+mm <- model.matrix(~x, data = da)
+k <-  ncol(mm)
+n <- nrow(mm)
+v <- solve(t(mm) %*% mm)
+betas_hat <- v %*% t(mm) %*% y
+
+# Posterior distribution: 
+# Betas | Sigma, y ~ N(beta_hat, \sigma^2 * V_betas)
+# Sigma | y ~ IG((n-k)/2, (n-k)*s^2_hat/2)
+
+y_hat <- mm %*% betas_hat
+da$res <- y - y_hat
+
+da %>% 
+  ggplot(aes(res)) +
+  geom_density(colour = 'skyblue', size = 1.2, alpha = 0.75) +
+  geom_vline(xintercept = 0, linetype = 'dotted') +
+  theme_bw() +
+  labs(x = 'residual')
+
+
+# Estimated s2 (of sigma^2)
+(s2 <- (t(da$res) %*% da$res)/(n-k))
+
+# Simulations -------------------------------------------------------------
+sim <- 10000
+gamma <- rgamma(sim, shape = (n-k)/2, 
+                rate = (n-k)*s2/2)
+
+# For the variance
+sigma <- 1/gamma
+
+err <- sigma * MASS::mvrnorm(n = sim, mu = c(0, 0), v)
+beta_sim <- rep(c(betas), each = 1000) + c(err[,1], err[,2])
+
+
+beta_sim %>% 
+  as.data.frame() %>% 
+  slice(1:1000) %>% 
+  ggplot(aes(.)) +
+  geom_density(colour = 'skyblue', size = 1.2, alpha = 0.75) +
+  geom_vline(xintercept = betas[1], linetype = 'dotted') +
+  theme_bw()
+
+beta_sim %>% 
+  as.data.frame() %>% 
+  slice(1001:2000) %>% 
+  ggplot(aes(.)) +
+  geom_density(colour = 'skyblue', size = 1.2, alpha = 0.75) +
+  geom_vline(xintercept = betas[2], linetype = 'dotted') +
+  theme_bw()
+
+```
+
+## Real Data 
+
+### Data Fields
+
+  - datetime - hourly date + timestamp  
+  - season -  1 = spring, 2 = summer, 3 = fall, 4 = winter 
+  - holiday - whether the day is considered a holiday
+  - workingday - whether the day is neither a weekend nor holiday
+  - weather - 1: Clear, Few clouds, Partly cloudy, Partly cloudy 
+  - 2: Mist + Cloudy, Mist + Broken clouds, Mist + Few clouds, Mist 
+  - 3: Light Snow, Light Rain + Thunderstorm + Scattered clouds, Light Rain + Scattered clouds 
+  - 4: Heavy Rain + Ice Pallets + Thunderstorm + Mist, Snow + Fog 
+  - temp - temperature in Celsius
+  - atemp - "feels like" temperature in Celsius
+  - humidity - relative humidity
+  - windspeed - wind speed
+  - casual - number of non-registered user rentals initiated
+  - registered - number of registered user rentals initiated
+  - count - number of total rentals
+
+
+```{r}
+da <- read.csv('~/Maynooth University/Andrew Parnell - CDA_PhD/data/Kaggle/Bike sharing/train.csv') %>% 
+  select(temp, humidity, season) %>% 
+  mutate(season = as.factor(season))
+head(da) %>% knitr::kable()
+```
+
+
+```{r, fig.align='center', out.width='80%', out.height='80%'}
+da %>% 
+  ggplot(aes(x = humidity, y = temp)) +
+  geom_point(colour = 'orange3', alpha = 0.65, size = 1.5) +
+  geom_smooth(method = 'lm', colour = 'grey') +
+  facet_wrap(~season) +
+  theme_bw()
+
+lm(temp ~ humidity +  factor(season), data = da) %>% summary()
+lm(temp ~ humidity, data = da) %>% summary() # Explains nothing
+
+# The model -----------------------------------------------------------
+mm <- model.matrix(~ humidity + season, data = da)
+k <-  ncol(mm)
+n <- nrow(mm)
+v <- solve(t(mm) %*% mm)
+betas_hat <- v %*% t(mm) %*% da$temp
+betas_hat
+
+y_hat <- mm %*% betas_hat
+da$res <- da$temp - y_hat
+
+da %>% 
+  ggplot(aes(res)) +
+  geom_density(colour = 'skyblue', size = 1.2, alpha = 0.75) +
+  geom_vline(xintercept = 0, linetype = 'dotted') +
+  theme_bw() +
+  labs(x = 'Residuals')
+
+
+# Simulations ----------------------------------------------------------
+
+# Estimated s2
+s2 <- (t(da$res) %*% da$res)/(n-k)
+
+sim <- 1000
+gamma <- rgamma(sim, shape = (n-k)/2, 
+                rate = (n-k)*s2/2)
+
+sigma <- 1/gamma
+err <- sigma * MASS::mvrnorm(n = 1000, mu = rep(0, 5), v)
+beta_sim <- rep(c(betas_hat), each = 1000) + as.vector(err)
+beta_sim <- beta_sim %>% as.data.frame() %>% 
+  mutate(groups = rep(1:5, each = 1000))
+
+vline <- function(group){
+  geom_vline(data = filter(beta_sim, 
+                           groups == group), 
+             aes(xintercept = betas_hat[group]), linetype = 'dotted') 
+}
+
+beta_sim %>% 
+  ggplot(aes(.)) +
+  geom_density(colour = 'skyblue', size = 1.1, alpha = 0.75) +
+  1:5 %>% purrr::map(vline) +
+  facet_wrap(~groups, scales = 'free') + 
+  theme_bw() +
+  labs(title = 'Densities for all the parameters')
+```
+
+
+## Credibility intervals
+
+```{r}
+
+```
+
