@@ -59,10 +59,12 @@ set.seed(2018) # reprodutibility
 sigma <- 1/rgamma(n = 1, shape = 0.5, rate = 1)
 x <- rnorm(n = 1000, mean = 3, sd = 1.5)
 e <- rnorm(n = 1000, mean = 0, sd = sqrt(sigma))
+V <- matrix(sigma*c(10, 0, 0, 10), ncol = 2, nrow = 2)
 
 # Priors of the parameters - intercept and slope
-# Justify the priors when simulating! 
-betas <- rnorm(n = 2, mean = 0, sd = sqrt(10))
+betas <- MASS::mvrnorm(n = 1, mu = c(0, 0),
+                       Sigma = V)
+
 
 # The regression model
 y <- betas[1] + (betas[2] * x) + e
@@ -78,7 +80,7 @@ da %>%
   labs(x = 'Independent variable', y = 'Dependent variable')
 ```
 
-```{r}
+```{r, fig.align='center', out.width='80%', out.height='80%'}
 # The classical regression model
 # With functions:
 lm(y ~ x) %>% summary()
@@ -96,10 +98,20 @@ betas_hat
 # y_hat
 y_hat <- mm %*% betas_hat
 
+da$res <- y - y_hat
+
+da %>% 
+  ggplot(aes(res)) +
+  geom_density(colour = 'skyblue', size = 1.2, alpha = 0.75) +
+  geom_vline(xintercept = 0, linetype = 'dotted') +
+  theme_bw() +
+  labs(x = 'residual')
+
+
 # Residual sum of squares
 rss <- sum((y - y_hat)^2)
 
-# Mean sum of errors
+# Mean squared errors
 mse <- mean((y - y_hat)^2)
 
 # Rs - Multiple correlation coefficients
@@ -114,9 +126,9 @@ var_betas
 t1 <- betas_hat[2]/sqrt(var_betas[2, 2]) 
 t2 <- betas_hat[1]/sqrt(var_betas[1, 1])
 
-# # p-values
-2 * pt(-abs(t1), df = n - k) # ?
-2 * pt(-abs(t2), df = n - k)
+# p-values
+# pt(t1, df = n - k) # ?
+# pt(t2, df = n - k)
 ```
 
 
@@ -150,115 +162,122 @@ as its domain goes from $0$ to $+\infty$.
 ```{r, fig.align='center', out.width='80%', out.height='80%'}
 # Bayesian model ---------------------------------------------------
 
-# Priors were already assigned 
-# Bs ~ Normal
-# Sigma ~ IG
+# Priors were already assigned as -------------
+# Bs ~ Normal(m, V) = Normal(0, sigma^2 * 10)
+# Sigma ~ IG(a, b) = IG(0.5, 1)
 
-# The same as before
-mm <- model.matrix(~x, data = da)
-k <-  ncol(mm)
-n <- nrow(mm)
-v <- solve(t(mm) %*% mm)
-betas_hat <- v %*% t(mm) %*% y
+# Posterior distribution ----------------------
+# Betas | Sigma, y ~ N(m*, V*)
+# Sigma | y ~ IG(a*, b*), where:
+#
+# m* = (V^-1 + B'B)^-1 * (V^-1*m + B'Y)
+# V* = (V^-1 + B'B)^-1
+# a* = a + n/2
+# b* = b + (m' V^-1 m + Y'Y -  (m*)'(V*)^-1m*)/2
+#----------------------------------------------
 
-# Posterior distribution: 
-# Betas | Sigma, y ~ N(beta_hat, \sigma^2 * V_betas)
-# Sigma | y ~ IG((n-k)/2, (n-k)*s^2_hat/2)
+v_star <- solve(solve(V) + t(mm) %*% mm)
+m_star <- v_star %*% (solve(V) %*% c(0, 0) + t(mm) %*% y)
+a_star <- 0.5 + n/2
+b_star <- 1 + (t(c(0, 0)) %*% solve(V) %*% c(0, 0) +
+                 (t(y) %*% y) - t(m_star) %*% solve(v_star) %*% m_star)/2
 
-y_hat <- mm %*% betas_hat
-da$res <- y - y_hat
-
-da %>% 
-  ggplot(aes(res)) +
-  geom_density(colour = 'skyblue', size = 1.2, alpha = 0.75) +
-  geom_vline(xintercept = 0, linetype = 'dotted') +
-  theme_bw() +
-  labs(x = 'residual')
-
-
-# Estimated s2 (of sigma^2)
-(s2 <- (t(da$res) %*% da$res)/(n-k))
-
-# Simulations -------------------------------------------------------------
-sim <- 10000
-gamma <- rgamma(sim, shape = (n-k)/2, 
-                rate = (n-k)*s2/2)
+# Sampling from the posteriors -----------------------------------------------------
+sim <- 100000
+gamma <- rgamma(sim, shape = a_star, 
+                rate = b_star)
 
 # For the variance
-sigma <- 1/gamma
-
-err <- sigma * MASS::mvrnorm(n = sim, mu = c(0, 0), v)
-beta_sim <- rep(c(betas), each = 1000) + c(err[,1], err[,2])
+sigma_sim <- 1/gamma
 
 
-beta_sim %>% 
-  as.data.frame() %>% 
-  slice(1:1000) %>% 
-  ggplot(aes(.)) +
+# Consider that  you have a random variable 
+# Y ~ Normal(mu, variance), if you multiply it 
+# by a constant 'c' the variance is multiplied
+# by c squared, aka, cY ~ Normal(mu, variance * c^2)
+
+# For the random error, we used that, if Y ~ Normal(0, v*),
+# sqrt(sigma) * Y ~ Normal(0, v*sigma), which is our 
+# target distribution 
+
+err <- sqrt(sigma_sim)*MASS::mvrnorm(n = sim, mu = c(0, 0),  v_star)
+
+# consider now that we are adding the random 
+# error ~ Normal(0, v*sigma) to a constant 
+# (the estimated mean for the betas), which will lead us to have
+# beta ~ Normal(m_star, v*sigma), as we just added a 
+# constant to the location of the distribution
+
+params <- data.frame(par = c(rep(c(m_star), each = sim) + 
+                         c(err[,1], err[,2]), sigma_sim)) 
+
+params$groups <- as.factor(rep(c(1:3), each = sim))
+params$groups_label <- factor(params$groups, labels = 
+                          c('beta[0]', 'beta[1]', 'sigma^2'))
+
+
+params_prior <- c(betas, sigma)
+
+vline <- function(group){
+  geom_vline(data = dplyr::filter(params, 
+                           groups == group), 
+             aes(xintercept = params_prior[group]), linetype = 'dotted') 
+}
+
+params %>% 
+  ggplot(aes(par)) +
   geom_density(colour = 'skyblue', size = 1.2, alpha = 0.75) +
-  geom_vline(xintercept = betas[1], linetype = 'dotted') +
-  theme_bw()
-
-beta_sim %>% 
-  as.data.frame() %>% 
-  slice(1001:2000) %>% 
-  ggplot(aes(.)) +
-  geom_density(colour = 'skyblue', size = 1.2, alpha = 0.75) +
-  geom_vline(xintercept = betas[2], linetype = 'dotted') +
-  theme_bw()
-
+    1:3 %>% purrr::map(vline) +
+  facet_wrap(~groups_label, scales = 'free', 
+             labeller = label_parsed) +
+  theme_bw() +
+  labs(x = 'Parameters', y = 'Density',
+       title = 'Posterior densities of the parameters')
 ```
 
 ## Real Data 
 
-### Data Fields
-
-  - datetime - hourly date + timestamp  
-  - season -  1 = spring, 2 = summer, 3 = fall, 4 = winter 
-  - holiday - whether the day is considered a holiday
-  - workingday - whether the day is neither a weekend nor holiday
-  - weather - 1: Clear, Few clouds, Partly cloudy, Partly cloudy 
-  - 2: Mist + Cloudy, Mist + Broken clouds, Mist + Few clouds, Mist 
-  - 3: Light Snow, Light Rain + Thunderstorm + Scattered clouds, Light Rain + Scattered clouds 
-  - 4: Heavy Rain + Ice Pallets + Thunderstorm + Mist, Snow + Fog 
-  - temp - temperature in Celsius
-  - atemp - "feels like" temperature in Celsius
-  - humidity - relative humidity
-  - windspeed - wind speed
-  - casual - number of non-registered user rentals initiated
-  - registered - number of registered user rentals initiated
-  - count - number of total rentals
-
+Data with the salary, years of experience and gender of 
+bank branch managers of a big bank. 
 
 ```{r}
-da <- read.csv('~/Maynooth University/Andrew Parnell - CDA_PhD/data/Kaggle/Bike sharing/train.csv') %>% 
-  select(temp, humidity, season) %>% 
-  mutate(season = as.factor(season))
+# devtools::install_github('pet-estatistica/labestData')
+da <- labestData::CharnetEg7.3 %>% 
+  mutate(gender = factor(sexo, labels = c('Female', 'Male'))) %>% 
+  select(-sexo)
+
 head(da) %>% knitr::kable()
 ```
 
 
 ```{r, fig.align='center', out.width='80%', out.height='80%'}
 da %>% 
-  ggplot(aes(x = humidity, y = temp)) +
+  ggplot(aes(y = salario, x = exp)) +
   geom_point(colour = 'orange3', alpha = 0.65, size = 1.5) +
-  geom_smooth(method = 'lm', colour = 'grey') +
-  facet_wrap(~season) +
-  theme_bw()
+  geom_smooth(method = 'lm', colour = 'grey80') +
+  facet_wrap(~gender, scales = 'free') +
+  theme_bw() +
+  labs(y = 'Salary', x = 'Experience')
+```
 
-lm(temp ~ humidity +  factor(season), data = da) %>% summary()
-lm(temp ~ humidity, data = da) %>% summary() # Explains nothing
+```{r}
+# The classic model
+lm(salario ~ exp + gender, data = da) %>% summary()
+```
 
-# The model -----------------------------------------------------------
-mm <- model.matrix(~ humidity + season, data = da)
+
+
+```{r, fig.align='center', out.width='80%', out.height='80%'}
+# The classic model by hand -----------------------------------------------
+mm <- model.matrix(~ exp + gender, data = da)
 k <-  ncol(mm)
 n <- nrow(mm)
 v <- solve(t(mm) %*% mm)
-betas_hat <- v %*% t(mm) %*% da$temp
+betas_hat <- v %*% t(mm) %*% da$salario
 betas_hat
 
 y_hat <- mm %*% betas_hat
-da$res <- da$temp - y_hat
+da$res <- da$salario - y_hat
 
 da %>% 
   ggplot(aes(res)) +
@@ -268,40 +287,104 @@ da %>%
   labs(x = 'Residuals')
 
 
-# Simulations ----------------------------------------------------------
+# Bayesian model ---------------------------------------------------
 
-# Estimated s2
-s2 <- (t(da$res) %*% da$res)/(n-k)
+# Priors were already assigned as -------------
+# Bs ~ Normal(m, V) = Normal(0, sigma^2 * 10)
+# Sigma ~ IG(a, b) = IG(0.5, 1)
 
-sim <- 1000
-gamma <- rgamma(sim, shape = (n-k)/2, 
-                rate = (n-k)*s2/2)
+# Posterior distribution ---------------
+# Betas | Sigma, y ~ N(m*, V*)
+# Sigma | y ~ IG(a*, b*), where:
+#
+# m* = (V^-1 + B'B)^-1 * (V^-1*m + B'Y)
+# V* = (V^-1 + B'B)^-1
+# a* = a + n/2
+# b* = b + (m' V^-1 m + Y'Y -  (m*)'(V*)^-1m*)/2
+#--------------------------------------
 
-sigma <- 1/gamma
-err <- sigma * MASS::mvrnorm(n = 1000, mu = rep(0, 5), v)
-beta_sim <- rep(c(betas_hat), each = 1000) + as.vector(err)
-beta_sim <- beta_sim %>% as.data.frame() %>% 
-  mutate(groups = rep(1:5, each = 1000))
+V <-  diag(10, nrow = dim(mm)[2], ncol = dim(mm)[2])
+v_star <- solve(solve(V) + t(mm) %*% mm)
+m_star <- v_star %*% (solve(V) %*% c(0, 0, 0) + t(mm) %*% da$salario)
+a_star <- 0.5 + n/2
+b_star <- 1 + (t(c(0, 0, 0)) %*% solve(V) %*% c(0, 0, 0) +
+                 (t(da$salario) %*% da$salario) - 
+                 t(m_star) %*% solve(v_star) %*% m_star)/2
 
-vline <- function(group){
-  geom_vline(data = filter(beta_sim, 
-                           groups == group), 
-             aes(xintercept = betas_hat[group]), linetype = 'dotted') 
+# Sampling from the posteriors -------------------------------
+sim <- 10000
+gamma <- rgamma(sim, shape = a_star, rate = b_star)
+
+# For the variance
+sigma_sim <- 1/gamma
+
+
+# Consider that  you have a random variable 
+# Y ~ Normal(mu, variance), if you multiply it 
+# by a constant 'c' the variance is multiplied
+# by c squared, aka, cY ~ Normal(mu, variance * c^2)
+
+# For the random error, we used that, if Y ~ Normal(0, v*),
+# sqrt(sigma) * Y ~ Normal(0, v*sigma), which is our 
+# target distribution 
+
+err <- sqrt(sigma_sim) * MASS::mvrnorm(n = sim, mu = rep(0, 3), Sigma  = v_star)
+
+# consider now that we are adding the random 
+# error ~ Normal(0, v*sigma) to a constant 
+# (the estimated mean for the betas), which will lead us to have
+# beta ~ Normal(m_star, v*sigma), as we just added a 
+# constant to the location of the distribution
+
+params <- data.frame(par = c(rep(c(betas_hat), each = sim) + as.vector(err),
+                             sigma_sim)) 
+
+params$groups <- as.factor(rep(c(1:4), each = sim))
+params$groups_label <- factor(params$groups, labels = 
+                                c('beta[0]', 'beta[1]',
+                                  'beta[2]', 'sigma^2'))
+
+# Finding the 'optimal parameters' accordingly to 
+# a defined loss function - the values for the parameters that
+# better represent the uncertainty after observing the data
+
+# Loss for betas: chosen to be the mean squared residual 
+loss <- function(x, y) {
+  mean((y - x)^2)
 }
 
-beta_sim %>% 
-  ggplot(aes(.)) +
-  geom_density(colour = 'skyblue', size = 1.1, alpha = 0.75) +
-  1:5 %>% purrr::map(vline) +
-  facet_wrap(~groups, scales = 'free') + 
+b0 <- optimize(function(x) loss(x, params$par[1:10000]), 
+               interval = c(-100, 100))$minimum
+b1 <- optimize(function(x) loss(x, params$par[10001:20000]), 
+               interval = c(-100, 100))$minimum
+b2 <- optimize(function(x) loss(x, params$par[20001:30000]), 
+               interval = c(0, 1))$minimum
+
+# Loss for sigma: chosen to be the mean of the abs(residual)
+loss_sigma <- function(x, y) {
+  mean(abs(y - x))
+}
+
+s <- optimize(function(x) loss_sigma(x, params$par[30001:40000]), 
+               interval = c(0, 10))$minimum
+
+params_est <- c(b0, b1, b2, s)
+
+vline <- function(group){
+  geom_vline(data = dplyr::filter(params, 
+                                  groups == group), 
+             aes(xintercept = params_est[group]), linetype = 'dotted') 
+}
+
+params %>% 
+  ggplot(aes(par)) +
+  geom_density(colour = 'skyblue', size = 1.2, alpha = 0.75) +
+  1:4 %>% purrr::map(vline) +
+  facet_wrap(~groups_label, scales = 'free', 
+             labeller = label_parsed) +
   theme_bw() +
-  labs(title = 'Densities for all the parameters')
+  labs(x = 'Parameters', y = 'Density', 
+       title = 'Posterior densities of the parameters')
 ```
 
-
-## Credibility intervals
-
-```{r}
-
-```
 

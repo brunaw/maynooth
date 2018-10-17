@@ -1,7 +1,8 @@
 ---
 title: "Git & GitHub"
-author: "Bruna Wundervald"
-date: "October, 2018"
+subtitle: "Bruna Wundervald"
+date: "Acknowledgements:"
+author: "October, 2018"
 output:
   xaringan::moon_reader:
     css: [default, maynooth, maynooth-fonts]
@@ -17,7 +18,21 @@ options(htmltools.dir.version = FALSE)
 
 ## What is git and GitHub?
 
+  - **Git**: the most widely used modern version control system 
+in the world today 
+    - Originally developed in 2005 by Linus Torvalds
 
+  - **Github**: is a web-based hosting service for version 
+  control using Git.
+  
+  
+<b>  
+```{r, echo = FALSE, fig.height=2, out.height="50%", out.width="30%", fig.align='center'}
+knitr::include_graphics("https://www.enriquedans.com/wp-content/uploads/2018/06/GitHub-Octocat.jpg")
+```
+
+
+[Git Cheatsheet here!](https://www.atlassian.com/git/tutorials/atlassian-git-cheatsheet)
 ---
 ## Starting 
 
@@ -34,17 +49,20 @@ the SSH keys. **But what is a SSH key?**
 
 ---
 
-# Connecting local git and GitHub
+## Connecting local git and GitHub
 
   1. Open the GitHub website and go to `Settings` -> `SSH and GPG keys` -> `New SSH key` 
+  
   2. Open  local terminal and run (with your email, of course): 
   `ssh-keygen -t rsa -b 4096 -C "your_email@example.com"`
+  
   3. Press enter till the end of the process.
+  
   4. On terminal, run `eval "$(ssh-agent -s)"`
   and `ssh-add ~/.ssh/id_rsa`. 
 
 
-Now you have generated the key. The next step is 
+Now you have generated the key. The next step is to 
 copy and paste it in GitHub:
 
   5. Open the file created in `~/.ssh` and copy it
@@ -63,8 +81,99 @@ First, create a repository in GitHub, by clicking
   by running `git clone username/repositoryname`
     - If you don't have the permission to clone
     the repository, git you tell you!
+  2. Starting editting the folder!
   
 
+To push your changes to git, there is basically four steps:
 
+  1. Check what changed with `git status`
   
+  2. Add your changes with `git add changed_file.extension`
+    - You can use `git add .` to add all of them!
+    
+  3. Commit your changes with `git commit -m "commit message"`
+  
+  4. Push your changes with `git push`
 
+
+Update git repositories with `git pull`!
+---
+
+## Branches 
+
+  - Branches are used to develop isolated functionalities
+  in a git repository.
+  
+```{r, echo = FALSE, out.height="50%", fig.height=1, out.width="70%", fig.align='center'}
+knitr::include_graphics("https://cdn-images-1.medium.com/max/1600/1*iB8lNrITmLvKeL8mnp3qAA.png")
+```
+
+
+---
+
+# Using branches
+
+  1. Create a new branch in the repo with `git checkout -b branch_name`
+  
+  2. Now you're working on this branch. 
+  
+  3. Add your changes normally, except by the push step: now you need
+  to use `git push branch_name` to identify where the changes are
+  coming from. 
+  
+  4. Return to the master branch with git `checkout master`
+  
+**At this point, the changes made using the branch are not**
+**available in the master folder. If everything is ok with**
+**the branch, you can `merge` ("accept") it with `git merge branch_name`** 
+  
+  - This depends on the branch having no conflicts with the
+  master branch. If conflicts exist, you might need to deal
+  with them manually. 
+  
+It's possible to check the differences between branches with
+`git diff <origin branch> <destin branch>`
+
+---
+
+## Contributing to existing repositories  
+
+Suppose you want to add changes to an existing repository - example:
+to discontinuated are packages. The step to do that are:
+
+  1.  `fork` the repository into your github account.
+  
+  
+```{r, out.height="40%", out.width="40%", fig.height=2, echo = FALSE, fig.align='center'}
+knitr::include_graphics("https://github-images.s3.amazonaws.com/help/bootcamp/Bootcamp-Fork.png")
+```
+
+
+  2. Clone it (from your github account, e.g. `github.com/your_user/forked_repository`), make the changes 
+  and push it, normally. 
+  
+  3. Make a `pull request` into the original repository, a.k.a.
+  ask for your changes to be add by the owner of the repository. 
+
+**Some repositories have their own contributing guide!**
+
+---
+
+# Contributing scheme
+```{r, echo=FALSE, fig.align='center', out.height="70%", out.width="90%", fig.height=2}
+knitr::include_graphics("http://jlord.us/git-it/assets/imgs/clone.png")
+```
+
+
+---
+
+class: center, middle, inverse
+
+# Thanks!
+
+
+<img src= "https://s3.amazonaws.com/kleebtronics-media/img/icons/github-white.png", width="50", height="50",  align="middle"> 
+
+<b>
+
+@brunaw 
