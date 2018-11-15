@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>The steps of a Kaggle project</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Bruna Wundervald" />
+    <link href="libs/remark-css/default.css" rel="stylesheet" />
+    <link href="libs/remark-css/maynooth.css" rel="stylesheet" />
+    <link href="libs/remark-css/maynooth-fonts.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# The steps of a Kaggle project
+### Bruna Wundervald
+### November, 2018
+
+---
+
+
+
+
+
+
+
+class: inverse, middle, center
+
+# Welcome. 
+
+
+
+---
+
+class: left
+
+# The *tidyverse* package
+
+
+&gt;  The tidyverse is an opinionated collection of R packages designed for data science. All packages share an underlying design philosophy, grammar, and data structures.  
+
+&lt;img src="img/tidy_workflow.png" width="55%" style="display: block; margin: auto;" /&gt;
+
+```
+install.packages("tidyverse")
+```
+
+---
+
+class: left
+
+# The packages
+
+
+```r
+library(tidyverse) 
+tidyverse::tidyverse_packages()
+```
+
+
+  * `ggplot2`: pretty plots,based on The Grammar of Graphics
+  * `dplyr`: data manipulation
+  * `tidyr`:  a set of functions that help you get to tidy data.
+  * `readr`: readr provides a fast and friendly way to read rectangular data 
+  * `purrr`: functional programming
+  * `tibble`: a modern re-imagining of the data frame
+  * `magrittr`: provides the pipe `%&gt;%`  
+  * `stringr`:  a cohesive set of functions to deal with strings
+  * `forcats`: useful tools that solve common problems with factors
+  * `lubridate`: functions to deal with dates
+  
+  
+---
+
+class: left
+
+# The book 
+
+
+&lt;div class="figure" style="text-align: center"&gt;
+&lt;img src="img/ds.png" alt="Book: R for Data Science, Hadley Wickham &amp;amp; Garrett Grolemund" width="35%" /&gt;
+&lt;p class="caption"&gt;Book: R for Data Science, Hadley Wickham &amp; Garrett Grolemund&lt;/p&gt;
+&lt;/div&gt;
+
+---
+
+class: left
+
+# The main author of the packages
+
+.pull-left[
+
+&lt;img src="img/hadley.png" width="95%" style="display: block; margin: auto;" /&gt;
+]
+
+.pull-right[
+&lt;img src="img/hadley_deers.jpg" width="75%" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+
+class: left
+
+# The data format
+
+&lt;img src="img/data.jpeg" width="75%" style="display: block; margin: auto;" /&gt;
+
+
+Paper: [Tidy Data, Hadley Wickham](https://www.jstatsoft.org/article/view/v059i10/v59i10.pdf)
+
+---
+class: middle, center
+
+## The Kaggle challenge
+
+Bike Sharing Demand
+
+---
+
+
+# The goal
+
+&gt; You are provided hourly rental data spanning two years. For this competition, the training set is comprised of the first 19 days of each month, while the test set is the 20th to the end of the month. You must predict the **total count of bikes rented during each hour** covered by the test set, using only information available prior to the rental period.
+
+
+**Steps:**
+
+  1. Read data and separate in train and test (70%-30% usually)
+  2. Wrangle data
+  3. Explore the data
+  4. Build a model
+  5. Evaluate your predictions
+
+---
+
+# 1. Reading data and creating the  train-test variable 
+
+
+
+```r
+set.seed(2018)
+df &lt;- read_csv("data/Kaggle/bike_sharing/train.csv") %&gt;% 
+  mutate(set = ifelse(runif(n = dim(.)[1]) &gt; 0.7, "test", "train")) %&gt;% 
+  as.data.frame()
+
+df %&gt;% 
+  count(set) %&gt;% 
+  mutate(prop = scales::percent(n/sum(n))) %&gt;% 
+  select(set, prop)
+```
+
+```
+# A tibble: 2 x 2
+  set   prop 
+  &lt;chr&gt; &lt;chr&gt;
+1 test  29.2%
+2 train 70.8%
+```
+
+
+---
+
+# 1. Reading data and separate it in train and test
+
+
+```r
+# Take a look at the data
+glimpse(df)
+```
+
+```
+Observations: 10,886
+Variables: 13
+$ datetime   &lt;dttm&gt; 2011-01-01 00:00:00, 2011-01-01 01:00:00, 2011-01-...
+$ season     &lt;int&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...
+$ holiday    &lt;int&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...
+$ workingday &lt;int&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...
+$ weather    &lt;int&gt; 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, ...
+$ temp       &lt;dbl&gt; 9.84, 9.02, 9.02, 9.84, 9.84, 9.84, 9.02, 8.20, 9.8...
+$ atemp      &lt;dbl&gt; 14.395, 13.635, 13.635, 14.395, 14.395, 12.880, 13....
+$ humidity   &lt;int&gt; 81, 80, 80, 75, 75, 75, 80, 86, 75, 76, 76, 81, 77,...
+$ windspeed  &lt;dbl&gt; 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 6.0032, 0.0...
+$ casual     &lt;int&gt; 3, 8, 5, 3, 0, 0, 2, 1, 1, 8, 12, 26, 29, 47, 35, 4...
+$ registered &lt;int&gt; 13, 32, 27, 10, 1, 1, 0, 2, 7, 6, 24, 30, 55, 47, 7...
+$ count      &lt;int&gt; 16, 40, 32, 13, 1, 1, 2, 3, 8, 14, 36, 56, 84, 94, ...
+$ set        &lt;chr&gt; "train", "train", "train", "train", "train", "train...
+```
+
+---
+
+# 2. Wrangle data
+
+The goal is to predict the hourly **count** of bikes rented. 
+We need to find a way to wrangle the data so it can be appropriate for
+the problem. 
+
+  - Extract the hour of each rental
+  - Extract the data of each rental
+  - Extract the month of each rental
+  - Think about a reasonal way to create new variables
+
+But...what does it mean to predict a count?
+
+
+---
+class: middle, center
+
+## Pause. Let us talk a little bit about modelling.
+
+---
+
+# Statistical modelling
+
+**Statistical modeling** is a way to approximate reality
+(the process generating your data) with a mathematical function. The model
+can usually be described by a equation. 
+
+&gt; Everything that involves probability is a model. 
+
+
+.pull-left[
+Suppose you are flipping a coin. If your coin is unbiased, it is natural 
+to expect that both the probability of heads and tails are the same and
+equal to 0.5. 
+
+So, the model for the coin flipping is:
+`\(P(flip = head) = P(flip = tail) = 0.5\)` 
+
+The coin has only two possibilities: heads and tails, which 
+configures a **discrete distribution**. 
+] 
+
+.pull-right[
+&lt;img src="img/coin.png" width="75%" style="display: block; margin: auto;" /&gt;
+
+]
+
+
+---
+
+# Usual models
+
+  - Probabilistic Models
+  - Linear Regression
+  - Generalised Linear Models
+  - Decision/regression Trees
+  - Time Series Models
+  - Support Vector Machine Models
+  - Neural Networks
+  - etc
+
+# Usual variable types 
+
+  - Binary
+  - Continuous, unlimited
+  - Factors
+  - Counts
+  - Times
+  - Diverse: text, images, audio, etc. 
+ 
+---
+
+# The count case 
+
+If you have a count random variable, the most common used model for it
+is the Poisson distribution. It can be proved that a count generating
+process has the form
+
+$$ P(Y = y) = \frac{\lambda^{y} exp\{-\lambda\}}{y!}, \quad  \lambda &gt;  0$$
+**where `\(\lambda\)` is interpreted as the rate in which the count 
+process happens**. What this means is that the probability of the
+variable `\(y\)` assuming some value is given by the above equation. 
+
+**And why are we even talking about that?**
+
+Well, in real life, we never know what `\(\lambda\)` is: is it 0.5? is it 2?
+is it 3.14? What we can assume is that `\(y\)` depends on some covariables 
+`\(x = (x_1,\dots,x_n)\)` and that we can estimate `\(\lambda\)`
+with these covariables. In this way, by having the information 
+about the covariables, we can **predict** our target variable y. Great!
+
+---
+
+class: middle, center
+
+### Fine. But I still don't know how the `\(x\)` are related to `\(y\)`. 
+
+&lt;img src="img/think.png" width="15%" style="display: block; margin: auto;" /&gt;
+
+---
+
+# Some details about poisson regression
+
+Regression is a classic statistical method and the details can 
+be actually extensive. The most important thing is that we
+can assume 
+
+$$ \lambda = exp(\beta_0 + \beta_1 \phi(x_1) + \dots + 
+\beta_n \phi(x_n))$$`
+`$$log(\lambda) = \beta_0 + \beta_1 \phi(x_1) + \dots + 
+\beta_n \phi(x_n) $$
+
+
+Or, in words, that the `\(log(\lambda)\)` is equal to a sum of the
+values of the covariables multiplied by a vector of coefficients
+and an intercept. Each coefficient measures what changes in the
+`\(log(\lambda)\)` when we add one unity of the each variable
+(e.g. `\(\beta_1\)` measures the difference that happens in 
+`\(log(\lambda)\)` when `\(x_1\)` increases
+by one). 
+
+Then we have some optimization methods to find values of 
+`\(\beta\)` that are the more consistent with the data provided. 
+
+
+---
+
+# Back to 2. Wrangle data
+
+
+A little introduction about the `dplyr` functions and the `pipe` (`%&gt;%`) :
+
+ * The `pipe`, or `%&gt;%` (ctrl + shift + m), is an operator that
+ applies to the data in the **left** the function that is in the **right**, e.g
+ 
+
+```r
+iris %&gt;% head()
+```
+
+```
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+1          5.1         3.5          1.4         0.2  setosa
+2          4.9         3.0          1.4         0.2  setosa
+3          4.7         3.2          1.3         0.2  setosa
+4          4.6         3.1          1.5         0.2  setosa
+5          5.0         3.6          1.4         0.2  setosa
+6          5.4         3.9          1.7         0.4  setosa
+```
+
+---
+
+# Back to 2. Wrangle data
+
+The five main functions of the `dplyr` package are: 
+  * `mutate()`: add or modify variables. 
+  * `select()`: select/discard variables.
+  * `filter()`: filter by some criteria.
+  * `summarise()`: summarises the data. 
+  * `arrange()`: sorts the data.  
+
+All of these functions can be combined!
+
+  * `group_by()`: performs operations within groups.
+
+Extensions are made with predicates: `_all`, `_if`, `_at`, `_each`
+
+---
+
+# Back to 2. Wrangle data
+
+Remember that we have to organise better the data so we can actually work 
+with it. How is that done?
+
+
+
+```r
+# Creating new variables
+df &lt;- df %&gt;% 
+  mutate(hour = lubridate::hour(datetime),
+         day = lubridate::day(datetime),
+         month = lubridate::month(datetime), 
+         day_of_week = lubridate::wday(datetime)) %&gt;% 
+  dplyr::select(-datetime)
+
+df %&gt;% slice(1:6)
+```
+
+```
+  season holiday workingday weather temp  atemp humidity windspeed casual
+1      1       0          0       1 9.84 14.395       81    0.0000      3
+2      1       0          0       1 9.02 13.635       80    0.0000      8
+3      1       0          0       1 9.02 13.635       80    0.0000      5
+4      1       0          0       1 9.84 14.395       75    0.0000      3
+5      1       0          0       1 9.84 14.395       75    0.0000      0
+6      1       0          0       2 9.84 12.880       75    6.0032      0
+  registered count   set hour day month day_of_week
+1         13    16 train    0   1     1           7
+2         32    40 train    1   1     1           7
+3         27    32 train    2   1     1           7
+4         10    13 train    3   1     1           7
+5          1     1 train    4   1     1           7
+6          1     1 train    5   1     1           7
+```
+
+
+---
+
+# Back to 2. Wrangle data
+
+We can think about creating variables that represent something
+different in ou dataset. 
+
+```r
+# Creating new variables
+df &lt;- df %&gt;% 
+  mutate(class_register = 
+           ifelse(registered &lt; quantile(registered, 0.3), "Low", 
+                  ifelse(registered &lt; quantile(registered, 0.7), "Medium", 
+                         "High")))
+
+df %&gt;% 
+  count(class_register) %&gt;% 
+  mutate(prop = scales::percent(n/sum(n))) %&gt;% 
+  select(class_register, prop)
+```
+
+```
+# A tibble: 3 x 2
+  class_register prop 
+  &lt;chr&gt;          &lt;chr&gt;
+1 High           30.1%
+2 Low            29.9%
+3 Medium         40.0%
+```
+
+
+
+---
+
+# 3. Explore the data
+
+You can use: 
+  - Plots
+  - Proportion tables
+  - Summaries
+  
+Suppose you want to check if the distribution of the count is different for each season of the year: 
+
+
+```r
+df %&gt;% 
+  ggplot(aes(count)) +
+  geom_histogram(fill = 'plum', colour = 'black') +
+  facet_wrap(~season) +
+  labs(x = 'Response varibable', y = 'Counts of the histogram') +
+  theme_bw()
+```
+
+
+---
+
+# 3. Explore the data
+
+&lt;img src="kaggle_files/figure-html/unnamed-chunk-16-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# 3. Explore the data
+
+
+```r
+df %&gt;% skimr::skim()
+```
+
+```
+Skim summary statistics
+ n obs: 10886 
+ n variables: 17 
+
+── Variable type:character ─────────────────────────────────────────────────
+       variable missing complete     n min max empty n_unique
+ class_register       0    10886 10886   3   6     0        3
+            set       0    10886 10886   4   5     0        2
+
+── Variable type:integer ───────────────────────────────────────────────────
+   variable missing complete     n    mean     sd p0 p25 p50 p75 p100
+     casual       0    10886 10886  36.02   49.96  0   4  17  49  367
+      count       0    10886 10886 191.57  181.14  1  42 145 284  977
+        day       0    10886 10886   9.99    5.48  1   5  10  15   19
+    holiday       0    10886 10886   0.029   0.17  0   0   0   0    1
+       hour       0    10886 10886  11.54    6.92  0   6  12  18   23
+   humidity       0    10886 10886  61.89   19.25  0  47  62  77  100
+ registered       0    10886 10886 155.55  151.04  0  36 118 222  886
+     season       0    10886 10886   2.51    1.12  1   2   3   4    4
+    weather       0    10886 10886   1.42    0.63  1   1   1   2    4
+ workingday       0    10886 10886   0.68    0.47  0   0   1   1    1
+     hist
+ ▇▂▁▁▁▁▁▁
+ ▇▅▂▂▁▁▁▁
+ ▇▆▅▇▅▆▆▇
+ ▇▁▁▁▁▁▁▁
+ ▇▇▇▇▇▇▇▇
+ ▁▁▃▇▇▇▇▅
+ ▇▅▂▁▁▁▁▁
+ ▇▁▇▁▁▇▁▇
+ ▇▁▃▁▁▁▁▁
+ ▃▁▁▁▁▁▁▇
+
+── Variable type:numeric ───────────────────────────────────────────────────
+    variable missing complete     n  mean   sd   p0   p25   p50   p75
+       atemp       0    10886 10886 23.66 8.47 0.76 16.66 24.24 31.06
+ day_of_week       0    10886 10886  4    2.01 1     2     4     6   
+       month       0    10886 10886  6.52 3.44 1     4     7    10   
+        temp       0    10886 10886 20.23 7.79 0.82 13.94 20.5  26.24
+   windspeed       0    10886 10886 12.8  8.16 0     7    13    17   
+  p100     hist
+ 45.45 ▁▃▇▆▆▇▃▁
+  7    ▇▇▇▇▁▇▇▇
+ 12    ▇▃▇▅▅▇▃▇
+ 41    ▁▅▇▇▇▇▃▁
+ 57    ▇▇▇▂▁▁▁▁
+```
+
+
+---
+
+# 4. Build a model
+
+First, let us separate the final data into train and test set. This
+is done so we can have some sample of the data that *was not seen*
+by the model, then we can evaluate the quality of the model with it. 
+
+```r
+# Separating the final data into train and test set
+train_data &lt;- df %&gt;% filter(set == 'train') %&gt;% as.data.frame()
+test_data &lt;- df %&gt;% filter(set == 'test') %&gt;% as.data.frame()
+```
+
+
+Declaring our model in R: 
+
+
+```r
+my_model &lt;- glm(count ~  day + hour + temp + month + atemp + 
+                  humidity + day_of_week + class_register + 
+                  windspeed + holiday + workingday + casual,
+                data = train_data, family = poisson)
+```
+
+---
+
+
+```r
+summary(my_model)
+```
+
+```
+
+Call:
+glm(formula = count ~ day + hour + temp + month + atemp + humidity + 
+    day_of_week + class_register + windspeed + holiday + workingday + 
+    casual, family = poisson, data = train_data)
+
+Deviance Residuals: 
+    Min       1Q   Median       3Q      Max  
+-10.213   -3.892   -1.019    2.646   20.998  
+
+Coefficients:
+                       Estimate Std. Error  z value Pr(&gt;|z|)    
+(Intercept)           5.343e+00  6.728e-03  794.114  &lt; 2e-16 ***
+day                   6.530e-04  1.511e-04    4.321 1.56e-05 ***
+hour                  3.075e-03  1.733e-04   17.748  &lt; 2e-16 ***
+temp                 -7.416e-04  5.443e-04   -1.362    0.173    
+month                 1.027e-02  2.762e-04   37.176  &lt; 2e-16 ***
+atemp                 5.551e-03  5.068e-04   10.953  &lt; 2e-16 ***
+humidity             -3.622e-04  5.314e-05   -6.816 9.38e-12 ***
+day_of_week          -5.918e-03  4.189e-04  -14.129  &lt; 2e-16 ***
+class_registerLow    -2.605e+00  5.056e-03 -515.239  &lt; 2e-16 ***
+class_registerMedium -8.094e-01  2.010e-03 -402.665  &lt; 2e-16 ***
+windspeed             1.068e-03  1.084e-04    9.857  &lt; 2e-16 ***
+holiday               1.086e-01  5.313e-03   20.445  &lt; 2e-16 ***
+workingday            2.294e-01  2.468e-03   92.941  &lt; 2e-16 ***
+casual                3.513e-03  1.957e-05  179.566  &lt; 2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for poisson family taken to be 1)
+
+    Null deviance: 1277462  on 7702  degrees of freedom
+Residual deviance:  169115  on 7689  degrees of freedom
+AIC: 218394
+
+Number of Fisher Scoring iterations: 5
+```
+
+
+---
+
+# 5. Evaluate your predictions
+
+
+```r
+# Creating the prediction
+test_data$prediction &lt;- stats::predict(my_model, 
+                                       newdata = test_data, type = 'response')
+
+# Checking our error
+sqrt(sum((log(test_data$count) - log(test_data$prediction))^2)/dim(test_data)[1])
+```
+
+```
+[1] 0.6818856
+```
+
+
+---
+
+Predicted  *versus* observed 
+
+
+```r
+test_data %&gt;% 
+  ggplot(aes(count, prediction)) +
+  geom_point(colour = 'royalblue', alpha = 0.75) +
+  labs(y = 'Predicted', x = 'Observed') + theme_bw()
+```
+
+&lt;img src="kaggle_files/figure-html/unnamed-chunk-22-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+
+---
+Possible extra steps are:
+
+  - More data wrangling
+  - More creation of new variables &amp; data exploration
+  - Dimensionality reduction, for when there are a lot of columns
+  - Testing different models to choose the best one
+
+
+---
+
+# Image example
+
+The explanatory variables are **extracted** from the imagem, 
+a matrix  `\(\mathbf X = \{x_{ijk}\}_{N\times M \times R}\)`, in which:  
+
+- `\(N\)` is the number of lines, 
+- `\(M\)` is the number of columns  
+- `\(R\)` is the number of *colours*, or *channels*
+
+The `\(x_{nm\cdot}\)` element is a *pixel*. 
+
+&lt;div class="figure" style="text-align: center"&gt;
+&lt;img src="img/matrix-rgb.png" alt="Pratap Singh, Bhupendra" width="70%" /&gt;
+&lt;p class="caption"&gt;Pratap Singh, Bhupendra&lt;/p&gt;
+&lt;/div&gt;
+
+
+---
+
+class: center, middle, inverse
+
+# Thanks!
+
+&lt;img src= "https://s3.amazonaws.com/kleebtronics-media/img/icons/github-white.png", width="50", height="50",  align="middle"&gt; 
+
+&lt;b&gt;
+
+[@brunaw](https://github.com/brunaw)
+    </textarea>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script>
+(function() {
+  var i, text, code, codes = document.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+})();
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
