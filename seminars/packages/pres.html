@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Working with R packages</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Ph.D. Candidate in Statistics, Maynooth University" />
+    <link href="libs/remark-css/default.css" rel="stylesheet" />
+    <link href="libs/remark-css/maynooth.css" rel="stylesheet" />
+    <link href="libs/remark-css/maynooth-fonts.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Working with <code>R</code> packages
+## Bruna Wundervald
+### Ph.D. Candidate in Statistics, Maynooth University
+### March, 2019
+
+---
+
+
+
+
+
+# Summary
+
+- Adding new functions to the `chorrrds` package
+
+- Writing the `README` of the package
+
+- Reviewing a package for `rOpenSci`
+
+
+---
+
+# Adding new functions to to the `chorrrds` package
+
+&gt; Package: `chorrrds`
+  GitHub: `https://github.com/r-music/chorrrds`
+
+Goals:
+  - Extract music chords for any artist;
+  - Provide auxiliar datasets and functions to analyse the
+    music chords.  
+
+**New functionalities:**     
+
+- `feature_extraction()`: 
+  - Extracts useful features from a chords dataset;
+  - Useful to representat the chords in a better way than just
+  a string;
+  
+- `chords_ngram()`: 
+  - Contructs the chords bigrams (or n-grams) for a chords dataset;
+  - Useful to work with structural dependencies in chords; 
+
+---
+
+# Before
+
+Suppose we have some generic chords data: 
+
+&lt;img src="img/data_before.png" width="120%" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# After
+
+&gt; 13 new columns to the data 
+
+&lt;img src="img/data_after.png" width="120%" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# Writing the `README` of the package
+
+Minimum elements: 
+  - Badges: 
+    - code coverage, 
+    - documentation, 
+    - [Travis](https://travis-ci.org/),
+    - downloads from CRAN. 
+  - Summary of the package and its functionalities;
+  - Installation guide, examples and references; 
+  - Citation; 
+  - Contribution guide. 
+
+---
+
+# README - Before
+
+&lt;img src="img/git_before.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+# README - After
+
+[Click here!](https://github.com/r-music/chorrrds/)
+
+Note: the `code coverage` is still incomplete,
+so the badge is not there :)
+
+---
+
+# Reviewing a package for `rOpenSci`
+
+ - `rOpenSci`: a community that promotes the transformation
+of science through open data &amp; software. 
+
+ - Their packages are reviewed as they were papers, but the
+ review is open (and more humane). 
+
+&gt; Package reviewed: `rromeo`
+
+&gt;  GitHub: `https://github.com/Rekyt/rromeo`
+
+&gt;  Theme: extract information on editorial policies of 
+  scientific journals regarding the archival of preprint, 
+  postprint and publishers’ manuscripts.
+
+---
+
+# Reviewing a package for `rOpenSci`
+
+Goals: 
+  - Check if the package has a clear statement of need and
+  target audience;
+  - Focus on the usability of the package:
+    - User friendly interface,
+    - Enough examples. 
+
+  - Check if the functions and examples work; 
+  - Check if the functions and arguments are named to work 
+  together to form a common, logical programming API that is easy
+  to read, and autocomplete. 
+  - Make general suggestions about how the package can
+  improve. 
+
+&gt; [Review page](https://github.com/ropensci/software-review/issues/285#issuecomment-472069821)
+
+---
+
+
+class: center, middle, inverse
+
+# Thanks!
+
+&lt;img src= "https://s3.amazonaws.com/kleebtronics-media/img/icons/github-white.png", width="50", height="50",  align="middle"&gt; 
+
+&lt;b&gt;
+
+[@brunaw](https://github.com/brunaw)
+    </textarea>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script>
+(function() {
+  var i, text, code, codes = document.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+})();
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

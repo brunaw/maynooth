@@ -17,8 +17,8 @@ editor_options:
 ```{r setup, include=FALSE}
 options(htmltools.dir.version = FALSE)
 knitr::opts_chunk$set(warning = FALSE, message = FALSE, 
-  comment = NA, dpi = 300,
-  fig.align = "center", out.width = "70%", cache = FALSE)
+                      comment = NA, dpi = 300,
+                      fig.align = "center", out.width = "70%", cache = FALSE)
 library(tidyverse)
 ```
 

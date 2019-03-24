@@ -1,0 +1,15 @@
+---
+title: "The steps of a Kaggle project"
+author: "Bruna Wundervald"
+date: "November, 2018"
+output:
+  xaringan::moon_reader:
+    css: [default, maynooth, maynooth-fonts]
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+editor_options: 
+  chunk_output_type: console
+---
