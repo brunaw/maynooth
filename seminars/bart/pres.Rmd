@@ -133,7 +133,7 @@ probabilities on 'bushy' trees.
 ---
 
   
-```{r psplit, fig.cap="Diffent specifications for the probability of splitting a node (Chipman et al., 1998)", out.height="90%", out.width="90%"}
+```{r psplit, fig.cap="Different specifications for the probability of splitting a node (Chipman et al., 1998)", out.height="90%", out.width="90%"}
 knitr::include_graphics("img/psplit.png")
 ```
 
@@ -407,6 +407,20 @@ knitr::include_graphics("img/BART_prediction_intervals.jpg")
   perform the collapsing over the terminal node parameters*
 
 
+---
+# References 
+
+
+```{r, results='asis'}
+library(RefManageR)
+bib_file = "seminars/bart/bibliography.bib"
+bib <- ReadBib(bib_file, check = FALSE)
+print(bib[key = c("Rmanual", "bartmachine",
+                  "Chipman2010", "Chipman1998")], 
+      .opts = list(check.entries = TRUE, 
+                   style = "html", 
+                   bib.style = "authoryear"))
+```
 
 
 ---
